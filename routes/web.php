@@ -11,9 +11,7 @@ Route::get('/', function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
+    Volt::route('/dashboard', 'dashboard.index')->name('dashboard');
 
     Volt::route('/time-tracking', 'time-tracker')->name('time-tracking');
 
