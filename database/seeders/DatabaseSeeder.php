@@ -60,7 +60,7 @@ class DatabaseSeeder extends Seeder
         $this->seedHolidays($employees, $manager);
 
         // ── 4. Tasks ─────────────────────────────────────────
-        $this->seedTasks($employees);
+        $this->seedTasks($employees, $manager);
 
         // ── 5. Shifts (next 7 days) ──────────────────────────
         $this->seedShifts($employees, $manager);
@@ -111,8 +111,9 @@ class DatabaseSeeder extends Seeder
     private function seedHolidays(array $employees, User $manager): void
     {
         $today = Carbon::today();
+        $year = $today->year;
 
-        // Approved holiday for emp1 — next week (useful for overlap testing with shifts)
+        // ── Alice (emp1): approved future holiday — blocks shifts on days +5..+7
         Holiday::create([
             'user_id' => $employees[0]->id,
             'approver_id' => $manager->id,
@@ -122,26 +123,57 @@ class DatabaseSeeder extends Seeder
             'status' => HolidayStatus::Approved,
         ]);
 
-        // Approved past holiday for emp2
+        // ── Alice: pending request (visible in approvals UI)
         Holiday::create([
-            'user_id' => $employees[1]->id,
-            'approver_id' => $manager->id,
-            'start_date' => $today->copy()->subDays(14),
-            'end_date' => $today->copy()->subDays(12),
-            'type' => LeaveType::Sick,
-            'status' => HolidayStatus::Approved,
-        ]);
-
-        // Pending request from emp2 — future
-        Holiday::create([
-            'user_id' => $employees[1]->id,
-            'start_date' => $today->copy()->addDays(20),
-            'end_date' => $today->copy()->addDays(24),
+            'user_id' => $employees[0]->id,
+            'start_date' => $today->copy()->addDays(30),
+            'end_date' => $today->copy()->addDays(32),
             'type' => LeaveType::Annual,
             'status' => HolidayStatus::Pending,
         ]);
 
-        // Pending request from emp3
+        // ── Bob (emp2): past approved holidays that consume most of his balance
+        //    LeaveBalanceService::ANNUAL_ALLOWANCE = 20 days
+        //    Verified weekday counts for 2026 calendar:
+        //    Jan 5 (Mon) – Jan 16 (Fri) = 10 weekdays
+        //    Feb 16 (Mon) – Feb 20 (Fri) = 5 weekdays
+        //    Mar 16 (Mon) – Mar 17 (Tue) = 2 weekdays
+        //    Total = 17 used → 3 remaining
+        Holiday::create([
+            'user_id' => $employees[1]->id,
+            'approver_id' => $manager->id,
+            'start_date' => Carbon::create($year, 1, 5),   // Mon Jan 5
+            'end_date' => Carbon::create($year, 1, 16),    // Fri Jan 16  → 10 weekdays
+            'type' => LeaveType::Annual,
+            'status' => HolidayStatus::Approved,
+        ]);
+        Holiday::create([
+            'user_id' => $employees[1]->id,
+            'approver_id' => $manager->id,
+            'start_date' => Carbon::create($year, 2, 16),  // Mon Feb 16
+            'end_date' => Carbon::create($year, 2, 20),    // Fri Feb 20  → 5 weekdays
+            'type' => LeaveType::Sick,
+            'status' => HolidayStatus::Approved,
+        ]);
+        Holiday::create([
+            'user_id' => $employees[1]->id,
+            'approver_id' => $manager->id,
+            'start_date' => Carbon::create($year, 3, 16),  // Mon Mar 16
+            'end_date' => Carbon::create($year, 3, 17),    // Tue Mar 17  → 2 weekdays
+            'type' => LeaveType::Personal,
+            'status' => HolidayStatus::Approved,
+        ]);
+
+        // ── Bob: pending request for 5 days (will exceed balance if approved → edge case demo)
+        Holiday::create([
+            'user_id' => $employees[1]->id,
+            'start_date' => $today->copy()->addDays(20),
+            'end_date' => $today->copy()->addDays(26),
+            'type' => LeaveType::Annual,
+            'status' => HolidayStatus::Pending,
+        ]);
+
+        // ── Carol (emp3): pending request (visible in approvals UI)
         Holiday::create([
             'user_id' => $employees[2]->id,
             'start_date' => $today->copy()->addDays(10),
@@ -149,22 +181,13 @@ class DatabaseSeeder extends Seeder
             'type' => LeaveType::Personal,
             'status' => HolidayStatus::Pending,
         ]);
-
-        // Another pending from emp1
-        Holiday::create([
-            'user_id' => $employees[0]->id,
-            'start_date' => $today->copy()->addDays(30),
-            'end_date' => $today->copy()->addDays(35),
-            'type' => LeaveType::Annual,
-            'status' => HolidayStatus::Pending,
-        ]);
     }
 
-    private function seedTasks(array $employees): void
+    private function seedTasks(array $employees, User $manager): void
     {
         $today = Carbon::today();
 
-        // Overdue task — in_progress, past due_date
+        // ── Overdue: in_progress, assigned to Alice
         $overdueTask1 = Task::create([
             'title' => 'Complete Q1 report',
             'description' => 'Compile and submit the quarterly financial report.',
@@ -175,7 +198,7 @@ class DatabaseSeeder extends Seeder
         ]);
         TaskAssignment::create(['task_id' => $overdueTask1->id, 'user_id' => $employees[0]->id, 'logged_hours' => 10]);
 
-        // Overdue task — todo, past due_date
+        // ── Overdue: todo, assigned to Bob
         $overdueTask2 = Task::create([
             'title' => 'Update employee handbook',
             'description' => 'Review and update policies for the current year.',
@@ -186,7 +209,18 @@ class DatabaseSeeder extends Seeder
         ]);
         TaskAssignment::create(['task_id' => $overdueTask2->id, 'user_id' => $employees[1]->id, 'logged_hours' => 0]);
 
-        // In-progress task — due soon
+        // ── Overdue: assigned to Manager (visible in manager dashboard)
+        $overdueManager = Task::create([
+            'title' => 'Review team performance reports',
+            'description' => 'Compile and review Q1 performance data for all team members.',
+            'priority' => TaskPriority::High,
+            'status' => TaskStatus::InProgress,
+            'due_date' => $today->copy()->subDays(2),
+            'estimated_hours' => 8,
+        ]);
+        TaskAssignment::create(['task_id' => $overdueManager->id, 'user_id' => $manager->id, 'logged_hours' => 3]);
+
+        // ── In-progress: due soon, multi-assigned
         $inProgressTask = Task::create([
             'title' => 'Onboarding flow redesign',
             'description' => 'Redesign the new hire onboarding experience.',
@@ -198,7 +232,7 @@ class DatabaseSeeder extends Seeder
         TaskAssignment::create(['task_id' => $inProgressTask->id, 'user_id' => $employees[0]->id, 'logged_hours' => 8]);
         TaskAssignment::create(['task_id' => $inProgressTask->id, 'user_id' => $employees[2]->id, 'logged_hours' => 5]);
 
-        // In-review task
+        // ── In-review: assigned to Bob
         $inReviewTask = Task::create([
             'title' => 'API documentation',
             'description' => 'Write comprehensive API docs for the internal service.',
@@ -209,7 +243,7 @@ class DatabaseSeeder extends Seeder
         ]);
         TaskAssignment::create(['task_id' => $inReviewTask->id, 'user_id' => $employees[1]->id, 'logged_hours' => 11]);
 
-        // Done task
+        // ── Done: assigned to Carol
         $doneTask = Task::create([
             'title' => 'Set up CI/CD pipeline',
             'description' => 'Configure GitHub Actions for automated testing and deployment.',
@@ -220,7 +254,7 @@ class DatabaseSeeder extends Seeder
         ]);
         TaskAssignment::create(['task_id' => $doneTask->id, 'user_id' => $employees[2]->id, 'logged_hours' => 10]);
 
-        // Todo task — future due date
+        // ── Todo: future, assigned to Alice
         $todoTask = Task::create([
             'title' => 'Research new scheduling library',
             'description' => 'Evaluate alternatives for the shift scheduling module.',
@@ -230,16 +264,6 @@ class DatabaseSeeder extends Seeder
             'estimated_hours' => 6,
         ]);
         TaskAssignment::create(['task_id' => $todoTask->id, 'user_id' => $employees[0]->id, 'logged_hours' => 0]);
-
-        // Another in-progress, no assignment yet
-        Task::create([
-            'title' => 'Database backup strategy',
-            'description' => 'Design an automated backup and recovery plan.',
-            'priority' => TaskPriority::Medium,
-            'status' => TaskStatus::Todo,
-            'due_date' => $today->copy()->addDays(7),
-            'estimated_hours' => 10,
-        ]);
     }
 
     private function seedShifts(array $employees, User $manager): void
