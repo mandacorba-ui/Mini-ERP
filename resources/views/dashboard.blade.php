@@ -1,23 +1,22 @@
-@extends('layouts.app')
+<x-app-layout>
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            {{ __('Dashboard') }}
+        </h2>
+    </x-slot>
 
-@section('content')
-    <h1 class="text-2xl font-semibold mb-6">Dashboard</h1>
+    <div class="py-12">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6 text-gray-900">
+                    <p class="mb-4">Welcome, <strong>{{ Auth::user()->name }}</strong>! Role: <span class="capitalize">{{ Auth::user()->role->value }}</span></p>
 
-    @auth
-        <p class="mb-4 text-gray-600">Welcome, {{ Auth::user()->name }}.</p>
-
-        <div class="bg-white rounded-lg shadow p-6">
-            <h2 class="font-medium mb-3">Quick Links</h2>
-            <ul class="list-disc list-inside space-y-1">
-                <li><a href="{{ route('time-tracking') }}" class="text-blue-600 hover:underline">Time Tracking</a></li>
-            </ul>
+                    <h3 class="text-lg font-medium mb-3">Quick Links</h3>
+                    <ul class="list-disc list-inside space-y-1">
+                        <li><a href="{{ route('time-tracking') }}" class="text-blue-600 hover:underline">Time Tracking</a></li>
+                    </ul>
+                </div>
+            </div>
         </div>
-    @else
-        <div class="bg-white rounded-lg shadow p-6">
-            <p class="mb-3 text-gray-600">You are not logged in.</p>
-            @if (app()->environment('local'))
-                <a href="{{ route('dev-login') }}" class="text-blue-600 hover:underline">Dev Login (admin)</a>
-            @endif
-        </div>
-    @endauth
-@endsection
+    </div>
+</x-app-layout>
