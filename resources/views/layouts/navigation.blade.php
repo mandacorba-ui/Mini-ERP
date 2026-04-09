@@ -18,6 +18,14 @@
                     <x-nav-link :href="route('time-tracking')" :active="request()->routeIs('time-tracking')">
                         {{ __('Time Tracking') }}
                     </x-nav-link>
+                    <x-nav-link :href="route('holidays')" :active="request()->routeIs('holidays')">
+                        {{ __('Holidays') }}
+                    </x-nav-link>
+                    @if (in_array(Auth::user()->role, [\App\Domain\IdentityAndAccess\Enums\UserRole::Manager, \App\Domain\IdentityAndAccess\Enums\UserRole::Admin]))
+                        <x-nav-link :href="route('holiday-approvals')" :active="request()->routeIs('holiday-approvals')">
+                            {{ __('Approvals') }}
+                        </x-nav-link>
+                    @endif
                 </div>
             </div>
 
@@ -76,6 +84,14 @@
             <x-responsive-nav-link :href="route('time-tracking')" :active="request()->routeIs('time-tracking')">
                 {{ __('Time Tracking') }}
             </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('holidays')" :active="request()->routeIs('holidays')">
+                {{ __('Holidays') }}
+            </x-responsive-nav-link>
+            @if (in_array(Auth::user()->role, [\App\Domain\IdentityAndAccess\Enums\UserRole::Manager, \App\Domain\IdentityAndAccess\Enums\UserRole::Admin]))
+                <x-responsive-nav-link :href="route('holiday-approvals')" :active="request()->routeIs('holiday-approvals')">
+                    {{ __('Approvals') }}
+                </x-responsive-nav-link>
+            @endif
         </div>
 
         <!-- Responsive Settings Options -->

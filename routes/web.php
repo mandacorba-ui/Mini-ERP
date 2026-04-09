@@ -15,6 +15,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Volt::route('/time-tracking', 'time-tracker')->name('time-tracking');
 
+    Volt::route('/holidays', 'holidays.index')->name('holidays');
+    Volt::route('/holiday-approvals', 'holidays.approvals')->name('holiday-approvals');
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
