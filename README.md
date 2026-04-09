@@ -66,6 +66,3 @@ php artisan test
 
 65 tests, 121 assertions covering time tracking, holidays, tasks, shifts, and authentication.
 
-## License
-
-MIT
