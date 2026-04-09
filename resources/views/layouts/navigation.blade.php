@@ -25,6 +25,9 @@
                         <x-nav-link :href="route('holiday-approvals')" :active="request()->routeIs('holiday-approvals')">
                             {{ __('Approvals') }}
                         </x-nav-link>
+                        <x-nav-link :href="route('shifts.manage')" :active="request()->routeIs('shifts.manage')">
+                            {{ __('Shifts') }}
+                        </x-nav-link>
                     @endif
                 </div>
             </div>
@@ -90,6 +93,9 @@
             @if (in_array(Auth::user()->role, [\App\Domain\IdentityAndAccess\Enums\UserRole::Manager, \App\Domain\IdentityAndAccess\Enums\UserRole::Admin]))
                 <x-responsive-nav-link :href="route('holiday-approvals')" :active="request()->routeIs('holiday-approvals')">
                     {{ __('Approvals') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('shifts.manage')" :active="request()->routeIs('shifts.manage')">
+                    {{ __('Shifts') }}
                 </x-responsive-nav-link>
             @endif
         </div>

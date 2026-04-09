@@ -18,6 +18,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Volt::route('/holidays', 'holidays.index')->name('holidays');
     Volt::route('/holiday-approvals', 'holidays.approvals')->name('holiday-approvals');
 
+    Volt::route('/shifts/manage', 'shifts.manage')->name('shifts.manage');
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
